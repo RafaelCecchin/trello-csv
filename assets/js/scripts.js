@@ -23,7 +23,7 @@ button.addEventListener("click", async () => {
     lists.forEach(list => {
       listIdToName[list.id] = list.name;
     });
-    
+
     const columns = {};
     lists.forEach(list => {
       columns[list.name] = [];
@@ -42,7 +42,6 @@ button.addEventListener("click", async () => {
     );
     
     const rows = [];
-
     for (let i = 0; i < maxRows; i++) {
       const row = {};
       for (const columnName of Object.keys(columns)) {
@@ -50,12 +49,26 @@ button.addEventListener("click", async () => {
       }
       rows.push(row);
     }
-
+    
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Trello");
+    
+    const csv = XLSX.utils.sheet_to_csv(worksheet, {
+      FS: ";"
+    });
+    
+    const blob = new Blob(
+      ["\ufeff" + csv],
+      { type: "text/csv;charset=utf-8;" }
+    );
 
-    XLSX.writeFile(workbook, "trello.xlsx");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "trello.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
 
   } catch (err) {
     console.error(err);

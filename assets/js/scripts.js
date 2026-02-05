@@ -31,9 +31,19 @@ button.addEventListener("click", async () => {
 
     cards.forEach(card => {
       const listName = listIdToName[card.idList];
-      if (listName && columns[listName]) {
-        columns[listName].push(card.name);
+      if (!listName || !columns[listName]) return;
+
+      let text = card.name;
+
+      if (Array.isArray(card.labels) && card.labels.length > 0) {
+        card.labels.forEach(label => {
+          if (label.name) {
+            text += `\nTag: ${label.name}`;
+          }
+        });
       }
+
+      columns[listName].push(text);
     });
     
     const maxRows = Math.max(

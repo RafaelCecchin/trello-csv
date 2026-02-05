@@ -5,40 +5,61 @@ button.addEventListener("click", async () => {
   const file = fileInput.files[0];
 
   if (!file) {
-    alert("Selecione um arquivo JSON");
+    alert("Selecione um arquivo JSON do Trello");
     return;
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
+  button.disabled = true;
+  button.innerText = "Converting...";
 
   try {
-    button.disabled = true;
-    button.innerText = "Converting...";
+    const text = await file.text();
+    const jsonData = JSON.parse(text);
 
-    const response = await fetch("/api/convert", {
-      method: "POST",
-      body: formData,
+    const lists = jsonData.lists || [];
+    const cards = jsonData.cards || [];
+    
+    const listIdToName = {};
+    lists.forEach(list => {
+      listIdToName[list.id] = list.name;
+    });
+    
+    const columns = {};
+    lists.forEach(list => {
+      columns[list.name] = [];
     });
 
-    if (!response.ok) {
-      throw new Error("Erro ao converter arquivo");
+    cards.forEach(card => {
+      const listName = listIdToName[card.idList];
+      if (listName && columns[listName]) {
+        columns[listName].push(card.name);
+      }
+    });
+    
+    const maxRows = Math.max(
+      ...Object.values(columns).map(col => col.length),
+      0
+    );
+    
+    const rows = [];
+
+    for (let i = 0; i < maxRows; i++) {
+      const row = {};
+      for (const columnName of Object.keys(columns)) {
+        row[columnName] = columns[columnName][i] || "";
+      }
+      rows.push(row);
     }
 
-    const blob = await response.blob();
-    
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "trello.xlsx";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Trello");
+
+    XLSX.writeFile(workbook, "trello.xlsx");
 
   } catch (err) {
     console.error(err);
-    alert("Falha ao converter o arquivo");
+    alert("Erro ao processar o arquivo. JSON inválido?");
   } finally {
     button.disabled = false;
     button.innerText = "Convert";

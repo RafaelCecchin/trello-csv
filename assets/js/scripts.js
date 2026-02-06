@@ -38,7 +38,7 @@ button.addEventListener("click", async () => {
       if (Array.isArray(card.labels) && card.labels.length > 0) {
         card.labels.forEach(label => {
           if (label.name) {
-            text += `\nTag: ${label.name}`;
+            text += ` | ${label.name}`;
           }
         });
       }

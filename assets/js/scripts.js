@@ -18,54 +18,40 @@ button.addEventListener("click", async () => {
 
     const lists = jsonData.lists || [];
     const cards = jsonData.cards || [];
-    
+
+    const activeLists = lists.filter(list => !list.closed);
+
     const listIdToName = {};
-    lists.forEach(list => {
+    activeLists.forEach(list => {
       listIdToName[list.id] = list.name;
     });
 
-    const columns = {};
-    lists.forEach(list => {
-      columns[list.name] = [];
-    });
+    const rows = cards
+      .filter(card => !card.closed && listIdToName[card.idList])
+      .map(card => {
 
-    cards.forEach(card => {
-      const listName = listIdToName[card.idList];
-      if (!listName || !columns[listName]) return;
+        const labels = (card.labels || [])
+          .map(label => label.name)
+          .filter(Boolean);
 
-      let text = card.name;
+        return {
+          Id: card.idShort || "",
+          Title: card.name || "",
+          Description: card.desc || "",
+          Column: listIdToName[card.idList] || "",
+          "Tag 1": labels[0] || "",
+          "Tag 2": labels[1] || "",
+          "Tag 3": labels[2] || "",
+          "Tag 4": labels[3] || ""
+        };
+      });
 
-      if (Array.isArray(card.labels) && card.labels.length > 0) {
-        card.labels.forEach(label => {
-          if (label.name) {
-            text += ` | ${label.name}`;
-          }
-        });
-      }
-
-      columns[listName].push(text);
-    });
-    
-    const maxRows = Math.max(
-      ...Object.values(columns).map(col => col.length),
-      0
-    );
-    
-    const rows = [];
-    for (let i = 0; i < maxRows; i++) {
-      const row = {};
-      for (const columnName of Object.keys(columns)) {
-        row[columnName] = columns[columnName][i] || "";
-      }
-      rows.push(row);
-    }
-    
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    
+
     const csv = XLSX.utils.sheet_to_csv(worksheet, {
-      FS: ";"
+      FS: ","
     });
-    
+
     const blob = new Blob(
       ["\ufeff" + csv],
       { type: "text/csv;charset=utf-8;" }
